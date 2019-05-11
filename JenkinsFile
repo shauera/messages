@@ -1,0 +1,57 @@
+#!groovy
+node ('aws&&docker') {
+    try {
+        stage ('Print environment') {
+            checkout scm
+            echo "\u2776 Dump the environment variables for convenient reference"
+            sh 'env | sort'
+        }
+        stage('Build') {
+            def customImage = docker.build("dsm-appliance-controller:${env.BUILD_ID}")
+
+            customImage.inside {
+                echo 'Building..'
+                sh "cp /go/src/dsgithub.trendmicro.com/deep-security/ds-appliance-controller/ds-appliance-controller.tar ${WORKSPACE}"
+            }
+        }
+
+        stage('Test') {
+            echo 'Testing..'
+        }
+
+        stage('Publish to Nexus'){
+            def version = sh(returnStdout: true, script: 'grep -oP "version\\s=\\s+.\\K[0-9.]*" ds-appliance-controller.version').trim()
+            def nexusURL = "dsnexus.trendmicro.com/nexus"
+            def nexusRepo = 'snapshots'
+            def groupID = 'com/trendmicro/ds'
+            def artifactID = 'ds-appliance-controller'
+            def versionOrBranchAndBuild = "${env.BRANCH_NAME}/build_${BUILD_NUMBER}"
+
+            if (env.BRANCH_NAME == 'integration') {
+                nexusRepo = 'releases'
+                versionOrBranchAndBuild = "${version}"
+            }
+
+            def fileUrl = "https://${nexusURL}/repository/${nexusRepo}/${groupID}/${artifactID}/${versionOrBranchAndBuild}"
+            def fileNameToNexus = "ds-appliance-controller.tar"
+            println("file URL: ${fileUrl}")
+
+            withCredentials([
+                usernamePassword(
+                    credentialsId: 'nexus-deploy',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )
+            ]) {
+                sh "curl --user \"\$USER:\$PASS\" --upload-file ./${fileNameToNexus} ${fileUrl}/${fileNameToNexus}"
+            }
+
+            sh "echo \"<A HREF=${fileUrl}/${fileNameToNexus}>${fileUrl}/${fileNameToNexus}<BR>\" >> artifacts.html"
+
+            archiveArtifacts 'artifacts.html'
+        }
+
+    } finally {
+        deleteDir()
+    }
+}

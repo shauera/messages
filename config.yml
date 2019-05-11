@@ -1,0 +1,11 @@
+service:
+  port: 8091
+
+mongo:
+  server: localhost:27017
+  username: root
+  password: example
+  timeout: 10
+
+logging:
+  level: debug
