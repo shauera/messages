@@ -1,8 +1,11 @@
 service:
   port: 8091
+  shutdownGraceDuration: 10
 
-mongo:
+database:
+  type: mongo
   server: localhost:27017
+  dbname: MessageManager
   username: root
   password: example
   timeout: 10
