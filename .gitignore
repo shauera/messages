@@ -5,7 +5,11 @@
 *.so
 *.dylib
 
+# Visual studio code folder
 .vscode
+
+# Message manager artifact
+messages.tar
 
 # Test binary, build with `go test -c`
 *.test

@@ -42,6 +42,24 @@ func (pc *PersonController) CreatePersonEndpoint(response http.ResponseWriter, r
 }
 
 func (pc *PersonController) GetPeopleEndpoint(response http.ResponseWriter, request *http.Request) {
+	// swagger:operation GET /hello/{name} hello Hello
+	//
+	// Returns a simple Hello message
+	// ---
+	// consumes:
+	// - text/plain
+	// produces:
+	// - text/plain
+	// parameters:
+	// - name: name
+	//   in: path
+	//   description: Name to be returned.
+	//   required: true
+	//   type: string
+	// responses:
+	//   '200':
+	//     description: The hello message
+	//     type: string
 	response.Header().Set("content-type", "application/json")
 
 	persons, err := pc.repository.ListPersons()

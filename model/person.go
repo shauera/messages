@@ -7,3 +7,5 @@ type Person struct {
 }
 
 type Persons []Person
+
+// TODO - add validation code

@@ -18,6 +18,9 @@ func setupMux(personController PersonController) *mux.Router {
 	router.HandleFunc("/person", personController.CreatePersonEndpoint).Methods("POST")
 	router.HandleFunc("/people", personController.GetPeopleEndpoint).Methods("GET")
 	router.HandleFunc("/person/{id}", personController.GetPersonEndpoint).Methods("GET")
+	// Add Swagger support
+	sh := http.StripPrefix("/swaggerui/", http.FileServer(http.Dir("./dist/")))
+	router.PathPrefix("/swaggerui/").Handler(sh)
 	return router
 }
 

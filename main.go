@@ -1,3 +1,20 @@
+// Messages Manager
+//
+// The purpose of this application is to test go-swagger in a simple GET request.
+//
+//     Schemes: http
+//     Host: localhost:8090
+//     Version: 0.0.1
+//     License: MIT http://opensource.org/licenses/MIT
+//     Contact: shalomn<shauera@gmail.com>
+//
+//     Consumes:
+//     - application/json
+//
+//     Produces:
+//     - application/json
+//
+// swagger:meta
 package main
 
 import (
