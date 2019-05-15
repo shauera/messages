@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/shauera/messages/model"
+	"github.com/shauera/messages/utils"
 
 	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/bson/primitive"
@@ -15,8 +16,8 @@ import (
 )
 
 type MongoRepository struct {
-	ctx context.Context
-	client *mongo.Client
+	ctx          context.Context
+	client       *mongo.Client
 	databaseName string
 }
 
@@ -32,25 +33,33 @@ func NewMongoRepository(ctx context.Context) *MongoRepository {
 	}
 
 	return &MongoRepository{
-		ctx: ctx,
-		client: client,
+		ctx:          ctx,
+		client:       client,
 		databaseName: config.GetString("database.dbname"),
 	}
 }
 
-func (mr *MongoRepository) CreatePerson(person model.Person) (*string, error) {
-	collection := mr.client.Database(mr.databaseName).Collection("people")
-	result, err := collection.InsertOne(mr.ctx, person)
+func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.MessageResponse, error) {
+	createMessage := model.MessageResponse{
+		Author: message.Author,
+		Content: message.Content,
+		CreatedAt: message.CreatedAt,
+		Palindrome: utils.IsPalindrome(message.Content),
+	}
+
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
+	result, err := collection.InsertOne(mr.ctx, createMessage)
 	if err != nil {
 		return nil, err
 	}
 
-	id := result.InsertedID.(primitive.ObjectID).Hex()
-	return &id, nil
+	createMessage.ID = result.InsertedID.(primitive.ObjectID).Hex()
+	
+	return &createMessage, nil
 }
 
-func (mr *MongoRepository) ListPersons() (model.Persons, error) {
-	collection := mr.client.Database(mr.databaseName).Collection("people")
+func (mr *MongoRepository) ListMessages() (model.MessageResponses, error) {
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	cursor, err := collection.Find(mr.ctx, bson.M{})
 	if err != nil {
@@ -58,33 +67,85 @@ func (mr *MongoRepository) ListPersons() (model.Persons, error) {
 	}
 	defer cursor.Close(mr.ctx)
 
-	var people model.Persons
+	var MessageResponses model.MessageResponses
 	for cursor.Next(mr.ctx) {
-		var person model.Person
-		cursor.Decode(&person)
-		people = append(people, person)
+		var MessageResponse model.MessageResponse
+		cursor.Decode(&MessageResponse)
+		MessageResponses = append(MessageResponses, MessageResponse)
 	}
 
 	if err := cursor.Err(); err != nil {
-		return nil ,err
+		return nil, err
 	}
 
-	return people, nil
+	return MessageResponses, nil
 }
 
-func (mr *MongoRepository) FindPersonById(id string) (*model.Person, error) {
-	collection := mr.client.Database(mr.databaseName).Collection("people")
+func (mr *MongoRepository) FindMessageById(id string) (*model.MessageResponse, error) {
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
-	personID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-	
-	var person model.Person
-	err = collection.FindOne(mr.ctx, model.Person{ID: personID}).Decode(&person)
+	messageID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &person, nil
+	var message model.MessageResponse
+	err = collection.FindOne(mr.ctx, model.MessageResponse{ID: messageID}).Decode(&message)
+	if err != nil && err.Error() == "mongo: no documents in result" {
+		return nil, ErrorNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &message, nil
+}
+
+func (mr *MongoRepository) UpdateMessageById(id string, message model.MessageRequest) (*model.MessageResponse, error) {
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
+
+	messageID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := model.MessageResponse{ID: messageID}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "author", Value: message.Author},
+			{Key: "content", Value: message.Content},
+			{Key: "createdAt", Value: message.CreatedAt},
+			{Key: "palindrome", Value: utils.IsPalindrome(message.Content)},
+		}},
+	}
+	updateOptions := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	var updatedMessage model.MessageResponse
+	err = collection.FindOneAndUpdate(mr.ctx, filter, update, updateOptions).Decode(&updatedMessage)
+	if err != nil && err.Error() == "mongo: no documents in result" {
+		return nil, ErrorNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedMessage, nil
+}
+
+func (mr *MongoRepository) DeleteMessageById(id string) (error) {
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
+
+	messageID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	result, err := collection.DeleteOne(mr.ctx, model.MessageResponse{ID: messageID})
+	if err == nil && result.DeletedCount == 0 {
+		return ErrorNotFound
+	}
+
+	return err
 }

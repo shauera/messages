@@ -13,37 +13,43 @@ import (
 	config "github.com/spf13/viper"
 )
 
-func setupMux(personController PersonController) *mux.Router {
+func setupMux(messageController MessageController) *mux.Router {
 	router := mux.NewRouter()
-	router.HandleFunc("/person", personController.CreatePersonEndpoint).Methods("POST")
-	router.HandleFunc("/people", personController.GetPeopleEndpoint).Methods("GET")
-	router.HandleFunc("/person/{id}", personController.GetPersonEndpoint).Methods("GET")
-	// Add Swagger support
-	sh := http.StripPrefix("/swaggerui/", http.FileServer(http.Dir("./dist/")))
-	router.PathPrefix("/swaggerui/").Handler(sh)
+	// Messages endpoints handlers
+	router.HandleFunc("/messages", messageController.CreateMessage).Methods("POST")
+	router.HandleFunc("/messages", messageController.ListMessages).Methods("GET")
+	router.HandleFunc("/messages/{id}", messageController.GetMessageByID).Methods("GET")
+	router.HandleFunc("/messages/{id}", messageController.UpdateMessageByID).Methods("PUT")
+	router.HandleFunc("/messages/{id}", messageController.DeleteMessageByID).Methods("DELETE")
+	// Swagger support
+	stripPrefixHandler := http.StripPrefix("/swaggerui/", http.FileServer(http.Dir("./dist/")))
+	router.PathPrefix("/swaggerui/").Handler(stripPrefixHandler)
+	// TODO - add middleware for JWT authorization
 	return router
 }
 
+// TODO - add metrics https://opencensus.io/stats/
+
 // StartHTTPServer - start service messages
-func StartHTTPServer(ctx context.Context, ) {
-	var personRepository PersonRepository
+func StartHTTPServer(ctx context.Context) {
+	var messageRepository MessageRepository
 
 	databaseType := config.GetString("database.type")
 	switch databaseType {
-		case "memory":
-			personRepository = persistence.NewMemoryRepository()
-		case "mongo":
-			personRepository = persistence.NewMongoRepository(ctx)
-		default:
-			log.WithField("databaseType", databaseType).Fatal("Non supported database type")
+	case "memory":
+		messageRepository = persistence.NewMemoryRepository()
+	case "mongo":
+		messageRepository = persistence.NewMongoRepository(ctx)
+	default:
+		log.WithField("databaseType", databaseType).Fatal("Non supported database type")
 	}
 
-	repositoryContext, cancel := context.WithTimeout(ctx, config.GetDuration("database.timeout") * time.Second)
+	repositoryContext, cancel := context.WithTimeout(ctx, config.GetDuration("database.timeout")*time.Second)
 	defer cancel()
 
-	personController := PersonController{repository: personRepository, ctx: repositoryContext}
+	messageController := MessageController{repository: messageRepository, ctx: repositoryContext}
 
-	router := setupMux(personController)
+	router := setupMux(messageController)
 
 	bindPort := ":" + config.GetString("service.port")
 	log.Fatal(http.ListenAndServe(bindPort, router))

@@ -1,6 +1,6 @@
 service:
   port: 8091
-  shutdownGraceDuration: 10
+  shutdownGraceDuration: 1
 
 database:
   type: mongo

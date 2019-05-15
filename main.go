@@ -1,12 +1,10 @@
 // Messages Manager
 //
-// The purpose of this application is to test go-swagger in a simple GET request.
+// The purpose of this application is to provide message persistence, analysis and easy retrieval.
 //
 //     Schemes: http
-//     Host: localhost:8090
 //     Version: 0.0.1
-//     License: MIT http://opensource.org/licenses/MIT
-//     Contact: shalomn<shauera@gmail.com>
+//     Contact: shalom<shauera@gmail.com>
 //
 //     Consumes:
 //     - application/json
@@ -35,7 +33,7 @@ func init() {
 }
 
 func main() {
-	log.Println("Starting the messages service...")
+	log.Println("Starting the Messages Manager service...")
 
 	cancellableContext, cancel := context.WithCancel(context.Background())
 	defer cancel()

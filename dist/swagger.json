@@ -10,48 +10,263 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "The purpose of this application is to test go-swagger in a simple GET request.",
+    "description": "The purpose of this application is to provide message persistence, analysis and easy retrieval.",
     "title": "Messages Manager",
     "contact": {
-      "name": "shalomn",
+      "name": "shalom",
       "email": "shauera@gmail.com"
-    },
-    "license": {
-      "name": "MIT",
-      "url": "http://opensource.org/licenses/MIT"
     },
     "version": "0.0.1"
   },
-  "host": "localhost:8090",
   "paths": {
-    "/hello/{name}": {
+    "/messages": {
       "get": {
-        "description": "Returns a simple Hello message",
+        "description": "Returns a list of all available messages",
         "consumes": [
-          "text/plain"
+          "application/json"
         ],
         "produces": [
-          "text/plain"
+          "application/json"
         ],
         "tags": [
-          "hello"
+          "messages"
         ],
-        "operationId": "Hello",
+        "operationId": "listMessages",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/MessageResponses"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new message",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "messages"
+        ],
+        "operationId": "createMessage",
+        "parameters": [
+          {
+            "type": "MessageRequest",
+            "description": "message to be created.",
+            "name": "messageRequest",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/MessageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/messages/{id}": {
+      "get": {
+        "description": "Returns a message by id",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "messages"
+        ],
+        "operationId": "listMessage",
         "parameters": [
           {
             "type": "string",
-            "description": "Name to be returned.",
-            "name": "name",
+            "description": "id of message to be returned.",
+            "name": "id",
             "in": "path",
             "required": true
           }
         ],
         "responses": {
           "200": {
-            "description": "The hello message"
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/MessageResponse"
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "description": "Updates message by id",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "messages"
+        ],
+        "operationId": "updateMessage",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "id of message to be returned.",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "MessageRequest",
+            "description": "message to be updated.",
+            "name": "messageRequest",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/MessageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/MessageResponse"
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete a message by id",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "messages"
+        ],
+        "operationId": "deleteMessage",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "id of message to be deleted.",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
+    }
+  },
+  "definitions": {
+    "MessageRequest": {
+      "description": "MessageRequest is a word, sentence or phrase written by an author\non a specific date and timeproduct in the store.\nIt is used to describe the animals available in the store.",
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "author": {
+          "description": "The author of the message.",
+          "type": "string",
+          "x-go-name": "Author",
+          "example": "William Shakespeare"
+        },
+        "content": {
+          "description": "The contet of the message.",
+          "type": "string",
+          "x-go-name": "Content",
+          "example": "To be, or not to be: that is the question "
+        },
+        "createdAt": {
+          "description": "The date and time when the message was created.",
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt",
+          "example": "1599-01-03T07:30:30.457Z"
+        }
+      },
+      "x-go-package": "github.com/shauera/messages/model"
+    },
+    "MessageResponse": {
+      "description": "MessageResponse is a word, sentence or phrase written by an author\non a specific date and timeproduct in the store.\nIt is used to describe the animals available in the store.",
+      "type": "object",
+      "properties": {
+        "author": {
+          "description": "The author of the message.",
+          "type": "string",
+          "x-go-name": "Author"
+        },
+        "content": {
+          "description": "The contet of the message.",
+          "type": "string",
+          "x-go-name": "Content"
+        },
+        "createdAt": {
+          "description": "The date and time when the message was created.",
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "CreatedAt"
+        },
+        "id": {
+          "description": "The id of the message - can't be explicitly set.",
+          "type": "object",
+          "x-go-name": "ID"
+        },
+        "palindrome": {
+          "description": "Indicates if the message content is a palindrome.\nThis is a calculated field that can't be explicitly set.",
+          "type": "boolean",
+          "x-go-name": "Palindrome"
+        }
+      },
+      "x-go-package": "github.com/shauera/messages/model"
+    },
+    "MessageResponses": {
+      "description": "MessageResponses - a collection of MessageResponse objects",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/MessageResponse"
+      },
+      "x-go-package": "github.com/shauera/messages/model"
     }
   }
 }

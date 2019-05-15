@@ -5,40 +5,77 @@ import (
 	"sync/atomic"
 
 	"github.com/shauera/messages/model"
+	"github.com/shauera/messages/utils"
 )
 
 type MemoryRepository struct {
-	personIDCounter int64
-	personsStorage map[string]model.Person
+	messageIDCounter int64
+	messagesStorage  map[string]model.MessageResponse
 }
 
 func NewMemoryRepository() *MemoryRepository {
 	return &MemoryRepository{
-		personsStorage: make(map[string]model.Person),
+		messagesStorage: make(map[string]model.MessageResponse),
 	}
 }
 
-func (mr *MemoryRepository) CreatePerson(person model.Person) (*string, error) {
-	id := strconv.FormatInt(atomic.AddInt64(&mr.personIDCounter, 1), 10)
-	newPerson := person
-	newPerson.ID = id
-	mr.personsStorage[id] = newPerson
+func (mr *MemoryRepository) CreateMessage(newMessage model.MessageRequest) (*model.MessageResponse, error) {
+	id := strconv.FormatInt(atomic.AddInt64(&mr.messageIDCounter, 1), 10)
 
-	return &id, nil
+	messageResponse := mr.storeMessage(id, newMessage)
+	return messageResponse, nil
 }
 
-func (mr *MemoryRepository) ListPersons() (model.Persons, error) {
+func (mr *MemoryRepository) UpdateMessageById(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
 
-	persons := make(model.Persons, 0, len(mr.personsStorage))
-
-	for  _, value := range mr.personsStorage {
-		persons = append(persons, value)
+	if _, ok := mr.messagesStorage[id]; ok {
+		return nil, ErrorNotFound
 	}
 
-	return persons, nil
+	return mr.storeMessage(id, updateMessage), nil
 }
 
-func (mr *MemoryRepository) FindPersonById(id string) (*model.Person, error) {
-	person := mr.personsStorage[id]
-	return &person, nil
+func (mr *MemoryRepository) ListMessages() (model.MessageResponses, error) {
+
+	messageResponses := make(model.MessageResponses, 0, len(mr.messagesStorage))
+
+	for _, value := range mr.messagesStorage {
+		messageResponses = append(messageResponses, value)
+	}
+
+	if len(messageResponses) == 0 {
+		return nil, nil
+	}
+
+	return messageResponses, nil
+}
+
+func (mr *MemoryRepository) FindMessageById(id string) (*model.MessageResponse, error) {
+	if messageResponse, ok := mr.messagesStorage[id]; ok {
+		return &messageResponse, nil
+	}
+
+	return nil, ErrorNotFound
+}
+
+func (mr *MemoryRepository) DeleteMessageById(id string) (error) {
+	if _, ok := mr.messagesStorage[id]; ok {
+		delete(mr.messagesStorage, id)
+		return nil
+	}
+
+	return ErrorNotFound	
+}
+
+func (mr *MemoryRepository) storeMessage(id string, updateMessage model.MessageRequest) (*model.MessageResponse) {
+	newMessageResponse := model.MessageResponse {
+		ID: id,
+		Author: updateMessage.Author,
+		Content: updateMessage.Content,
+		CreatedAt: updateMessage.CreatedAt,
+		Palindrome: utils.IsPalindrome(updateMessage.Content),
+	}
+	mr.messagesStorage[id] = newMessageResponse
+
+	return &newMessageResponse
 }
