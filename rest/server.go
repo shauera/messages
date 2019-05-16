@@ -3,7 +3,6 @@ package rest
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 
@@ -44,7 +43,7 @@ func StartHTTPServer(ctx context.Context) {
 		log.WithField("databaseType", databaseType).Fatal("Non supported database type")
 	}
 
-	repositoryContext, cancel := context.WithTimeout(ctx, config.GetDuration("database.timeout")*time.Second)
+	repositoryContext, cancel := context.WithTimeout(ctx, config.GetDuration("database.timeout"))
 	defer cancel()
 
 	messageController := MessageController{repository: messageRepository, ctx: repositoryContext}

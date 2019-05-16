@@ -132,7 +132,7 @@
         "parameters": [
           {
             "type": "string",
-            "description": "id of message to be returned.",
+            "description": "id of message to be updated.",
             "name": "id",
             "in": "path",
             "required": true
@@ -218,11 +218,7 @@
           "example": "To be, or not to be: that is the question "
         },
         "createdAt": {
-          "description": "The date and time when the message was created.",
-          "type": "string",
-          "format": "date-time",
-          "x-go-name": "CreatedAt",
-          "example": "1599-01-03T07:30:30.457Z"
+          "$ref": "#/definitions/MessageTime"
         }
       },
       "x-go-package": "github.com/shauera/messages/model"
@@ -242,10 +238,7 @@
           "x-go-name": "Content"
         },
         "createdAt": {
-          "description": "The date and time when the message was created.",
-          "type": "string",
-          "format": "date-time",
-          "x-go-name": "CreatedAt"
+          "$ref": "#/definitions/MessageTime"
         },
         "id": {
           "description": "The id of the message - can't be explicitly set.",
@@ -266,6 +259,12 @@
       "items": {
         "$ref": "#/definitions/MessageResponse"
       },
+      "x-go-package": "github.com/shauera/messages/model"
+    },
+    "MessageTime": {
+      "description": "MessageTime - support \"null\" as zero time\nwe want this to be an alias to time.Time so swagger will pick this as time when creating examples",
+      "type": "string",
+      "format": "date-time",
       "x-go-package": "github.com/shauera/messages/model"
     }
   }

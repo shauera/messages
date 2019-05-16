@@ -56,7 +56,7 @@ func main() {
 		// Wait for routines to stop
 		shutdownGraceDuration := config.GetDuration("service.shutdownGraceDuration")
 		log.WithField("gracePeriod", shutdownGraceDuration).Info("Waiting for routines to stop")
-		time.Sleep(shutdownGraceDuration * time.Second)
+		time.Sleep(shutdownGraceDuration)
 
 		// Finished cleanup...
 		close(cleanupDone)

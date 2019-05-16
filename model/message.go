@@ -1,7 +1,7 @@
 package model
 
 import (
-	"time"
+//"time"
 )
 
 // MessageRequest is a word, sentence or phrase written by an author
@@ -13,20 +13,20 @@ type MessageRequest struct {
 	// The contet of the message.
 	//
 	// required: true
-	// example: To be, or not to be: that is the question 
-	Content string `json:"content,omitempty" bson:"content,omitempty"`
+	// example: To be, or not to be: that is the question
+	Content *string `json:"content,omitempty" bson:"content,omitempty"`
 
 	// The author of the message.
 	//
 	// required: false
 	// example: William Shakespeare
-	Author string `json:"author,omitempty" bson:"author,omitempty"`
+	Author *string `json:"author,omitempty" bson:"author,omitempty"`
 
 	// The date and time when the message was created.
 	//
 	// required: false
 	// example: 1599-01-03T07:30:30.457Z
-	CreatedAt time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
+	CreatedAt *MessageTime `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 }
 
 // MessageResponse is a word, sentence or phrase written by an author
@@ -36,16 +36,16 @@ type MessageRequest struct {
 // swagger:model
 type MessageResponse struct {
 	// The id of the message - can't be explicitly set.
-	ID interface{} `json:"id,omitempty" bson:"_id,omitempty"`
+	ID interface{} `json:"id" bson:"_id"`
 
 	// The contet of the message.
-	Content string `json:"content,omitempty" bson:"content,omitempty"`
+	Content *string `json:"content,omitempty" bson:"content,omitempty"`
 
 	// The author of the message.
-	Author string `json:"author,omitempty" bson:"author,omitempty"`
+	Author *string `json:"author,omitempty" bson:"author,omitempty"`
 
 	// The date and time when the message was created.
-	CreatedAt time.Time `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
+	CreatedAt *MessageTime `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
 
 	// Indicates if the message content is a palindrome.
 	// This is a calculated field that can't be explicitly set.

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"regexp"
-    "strings"
+	"strings"
 )
 
 // https://en.wikipedia.org/wiki/Palindrome
@@ -13,15 +13,14 @@ import (
 // such as "A man, a plan, a canal, Panama!", "Was it a car or a cat I saw?"
 // or "No 'x' in Nixon".
 
-
 // IsPalindrome - returns true if the given string is a palindrome.
 // Note that this function is considerring English characters only.
 // Specifically it will ignore any character that is not in {a-z,A-Z,0-9}
 // Case is also ignored
 func IsPalindrome(str string) bool {
 	str = prepare(str)
-	for i := 0; i < len(str) / 2; i++ {
-		if str[i] != str[len(str) - i - 1] {
+	for i := 0; i < len(str)/2; i++ {
+		if str[i] != str[len(str)-i-1] {
 			return false
 		}
 	}
@@ -29,7 +28,7 @@ func IsPalindrome(str string) bool {
 }
 
 func prepare(str string) string {
-    reg, _ := regexp.Compile("[^A-Za-z0-9]+")
-    clean := reg.ReplaceAllString(str, "")
-    return strings.ToLower(strings.Trim(clean, ""))
+	reg, _ := regexp.Compile("[^A-Za-z0-9]+")
+	clean := reg.ReplaceAllString(str, "")
+	return strings.ToLower(strings.Trim(clean, ""))
 }

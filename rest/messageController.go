@@ -165,7 +165,7 @@ func (mc *MessageController) UpdateMessageByID(response http.ResponseWriter, req
 	// parameters:
 	// - name: id
 	//   in: path
-	//   description: id of message to be returned.
+	//   description: id of message to be updated.
 	//   required: true
 	//   type: string
 	// - name: messageRequest

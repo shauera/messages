@@ -27,7 +27,7 @@ func InitConfig() {
 	config.SetDefault(
 		"service", map[string]interface{}{
 			"port":                  "8090",
-			"shutdownGraceDuration": 10,
+			"shutdownGraceDuration": "10s",
 		},
 	)
 

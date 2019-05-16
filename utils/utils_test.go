@@ -18,9 +18,9 @@ func TestIsPlaindrome(t *testing.T) {
 	testCases := []struct {
 		inputStr string
 		expected bool
-	} {
-		{"", true}, //debatebale
-		{" ", true}, //debatebale
+	}{
+		{"", true},       //debatebale
+		{" ", true},      //debatebale
 		{"      ", true}, //debatebale
 		{"1", true},
 		{"12", false},

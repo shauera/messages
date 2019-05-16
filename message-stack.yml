@@ -22,11 +22,11 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
-  messages:
-    image: shauer/messages
-    restart: always
-    ports:
-      - 8090:8090
+  # messages:
+  #   image: shauer/messages
+  #   restart: always
+  #   ports:
+  #     - 8090:8090
 
 volumes:
   mongo:

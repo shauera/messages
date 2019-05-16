@@ -41,10 +41,10 @@ func NewMongoRepository(ctx context.Context) *MongoRepository {
 
 func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.MessageResponse, error) {
 	createMessage := model.MessageResponse{
-		Author: message.Author,
-		Content: message.Content,
-		CreatedAt: message.CreatedAt,
-		Palindrome: utils.IsPalindrome(message.Content),
+		Author:     message.Author,
+		Content:    message.Content,
+		CreatedAt:  message.CreatedAt,
+		Palindrome: utils.IsPalindrome(*message.Content),
 	}
 
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
@@ -54,7 +54,7 @@ func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.M
 	}
 
 	createMessage.ID = result.InsertedID.(primitive.ObjectID).Hex()
-	
+
 	return &createMessage, nil
 }
 
@@ -116,7 +116,7 @@ func (mr *MongoRepository) UpdateMessageById(id string, message model.MessageReq
 			{Key: "author", Value: message.Author},
 			{Key: "content", Value: message.Content},
 			{Key: "createdAt", Value: message.CreatedAt},
-			{Key: "palindrome", Value: utils.IsPalindrome(message.Content)},
+			{Key: "palindrome", Value: utils.IsPalindrome(*message.Content)},
 		}},
 	}
 	updateOptions := options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -134,7 +134,7 @@ func (mr *MongoRepository) UpdateMessageById(id string, message model.MessageReq
 	return &updatedMessage, nil
 }
 
-func (mr *MongoRepository) DeleteMessageById(id string) (error) {
+func (mr *MongoRepository) DeleteMessageById(id string) error {
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	messageID, err := primitive.ObjectIDFromHex(id)
