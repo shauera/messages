@@ -1,4 +1,4 @@
-package main
+package application
 
 import (
 	"fmt"
@@ -22,6 +22,8 @@ func (u utcJSONFormatter) Format(e *log.Entry) ([]byte, error) {
 	return u.fmt.Format(e)
 }
 
+//InitLogging - setup loging to output file and line numbers,
+//enforce UTC time zone and output as JSON for easier machine parsing
 func InitLogging() {
 	// Set minimal logging level
 	logLevel, err := log.ParseLevel(config.GetString("logging.level"))

@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/shauera/messages/application"
 	rest "github.com/shauera/messages/rest"
 
 	log "github.com/sirupsen/logrus"
@@ -28,8 +29,8 @@ import (
 )
 
 func init() {
-	InitConfig()
-	InitLogging()
+	application.InitConfig()
+	application.InitLogging()
 }
 
 func main() {

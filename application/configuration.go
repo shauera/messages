@@ -1,10 +1,13 @@
-package main
+package application
 
 import (
 	log "github.com/sirupsen/logrus"
 	config "github.com/spf13/viper"
 )
 
+//InitConfig - initialize message manager instance defaults
+//This will read the configuration file and set defaults for each
+//missing configuration entry
 func InitConfig() {
 	// Source
 	config.SetConfigName("config")
