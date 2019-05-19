@@ -2,7 +2,11 @@ package model
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
+
+	"github.com/mongodb/mongo-go-driver/bson/bsontype"
+	"github.com/mongodb/mongo-go-driver/x/bsonx/bsoncore"
 )
 
 // MessageTime - support "null" as zero time
@@ -29,8 +33,30 @@ func (mt *MessageTime) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// MarshalJSON - marshals as time.Time
+// MarshalJSON - marshals to JSON as time.Time
 func (mt MessageTime) MarshalJSON() ([]byte, error) {
 	tmpTime := time.Time(mt)
 	return tmpTime.MarshalJSON()
+}
+
+// UnmarshalBSONValue - unmarshal BSON to time.Time
+func (mt *MessageTime) UnmarshalBSONValue(t bsontype.Type, raw []byte) error {
+	if t == bsontype.DateTime {
+		if tmpTime, _, ok := bsoncore.ReadTime(raw); ok {
+			*mt = MessageTime(tmpTime)
+			return nil
+		}
+	}
+
+	return errors.New("unable to unmarshal bson MessageTime")
+}
+
+//MarshalBSONValue - marshals to BSON as time.Time
+func (mt *MessageTime) MarshalBSONValue() (bsontype.Type, []byte, error) {
+	tmpTime := time.Time{}
+	if mt != nil {
+		tmpTime = time.Time(*mt)
+	}
+
+	return bsontype.DateTime, bsoncore.AppendTime(nil, tmpTime), nil
 }

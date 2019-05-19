@@ -3,7 +3,7 @@ service:
   shutdownGraceDuration: 1s
 
 database:
-  type: memory
+  type: mongo
   server: localhost:27017
   dbname: MessageManager
   username: root

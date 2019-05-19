@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/shauera/messages/model"
-	modelCommon "github.com/shauera/messages/model/common"
+	modelCommon "github.com/shauera/messages/model"
 
 	"github.com/gorilla/mux"
 
@@ -16,11 +16,11 @@ import (
 
 // MessageRepository - repository abstraction to be implemented by persisters
 type MessageRepository interface {
-	FindMessageById(id string) (*model.MessageResponse, error)
+	FindMessageByID(id string) (*model.MessageResponse, error)
 	CreateMessage(message model.MessageRequest) (*model.MessageResponse, error)
 	ListMessages() (model.MessageResponses, error)
-	DeleteMessageById(id string) error
-	UpdateMessageById(id string, message model.MessageRequest) (*model.MessageResponse, error)
+	DeleteMessageByID(id string) error
+	UpdateMessageByID(id string, message model.MessageRequest) (*model.MessageResponse, error)
 }
 
 // MessageController - handles message resource endpoints
@@ -138,7 +138,7 @@ func (mc *MessageController) GetMessageByID(response http.ResponseWriter, reques
 	//     description: Internal Server Error
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	message, err := mc.repository.FindMessageById(params["id"])
+	message, err := mc.repository.FindMessageByID(params["id"])
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)
@@ -195,7 +195,7 @@ func (mc *MessageController) UpdateMessageByID(response http.ResponseWriter, req
 
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	message, err := mc.repository.UpdateMessageById(params["id"], updatedMessage)
+	message, err := mc.repository.UpdateMessageByID(params["id"], updatedMessage)
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)
@@ -234,7 +234,7 @@ func (mc *MessageController) DeleteMessageByID(response http.ResponseWriter, req
 	//     description: Internal Server Error
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	err := mc.repository.DeleteMessageById(params["id"])
+	err := mc.repository.DeleteMessageByID(params["id"])
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)

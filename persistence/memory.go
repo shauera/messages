@@ -9,17 +9,21 @@ import (
 	"github.com/shauera/messages/utils"
 )
 
+//MemoryRepository - in memory repository for use with demo, mocking out real database and tests
+//ALL RECORDS WILL BE DELETED ONCE THE INSTANCE IS RESTARTED!
 type MemoryRepository struct {
 	messageIDCounter int64
 	messagesStorage  map[string]model.MessageResponse
 }
 
+//NewMemoryRepository - initialize and return a new MemoryRepository
 func NewMemoryRepository() *MemoryRepository {
 	return &MemoryRepository{
 		messagesStorage: make(map[string]model.MessageResponse),
 	}
 }
 
+//CreateMessage - adds a new message record into repository
 func (mr *MemoryRepository) CreateMessage(newMessage model.MessageRequest) (*model.MessageResponse, error) {
 	id := strconv.FormatInt(atomic.AddInt64(&mr.messageIDCounter, 1), 10)
 
@@ -27,7 +31,9 @@ func (mr *MemoryRepository) CreateMessage(newMessage model.MessageRequest) (*mod
 	return messageResponse, nil
 }
 
-func (mr *MemoryRepository) UpdateMessageById(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
+//UpdateMessageByID - updates an existing message record
+//An error will be returned if the given id does not exist 
+func (mr *MemoryRepository) UpdateMessageByID(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
 
 	if oldMessage, ok := mr.messagesStorage[id]; ok {
 		return mr.storeMessage(id, oldMessage, updateMessage), nil
@@ -36,6 +42,7 @@ func (mr *MemoryRepository) UpdateMessageById(id string, updateMessage model.Mes
 	return nil, ErrorNotFound
 }
 
+//ListMessages - returns all message records in the repository
 func (mr *MemoryRepository) ListMessages() (model.MessageResponses, error) {
 
 	messageResponses := make(model.MessageResponses, 0, len(mr.messagesStorage))
@@ -51,7 +58,9 @@ func (mr *MemoryRepository) ListMessages() (model.MessageResponses, error) {
 	return messageResponses, nil
 }
 
-func (mr *MemoryRepository) FindMessageById(id string) (*model.MessageResponse, error) {
+//FindMessageByID - returns an existing message record
+//An error will be returned if the given id does not exist  
+func (mr *MemoryRepository) FindMessageByID(id string) (*model.MessageResponse, error) {
 	if messageResponse, ok := mr.messagesStorage[id]; ok {
 		return &messageResponse, nil
 	}
@@ -59,7 +68,9 @@ func (mr *MemoryRepository) FindMessageById(id string) (*model.MessageResponse, 
 	return nil, ErrorNotFound
 }
 
-func (mr *MemoryRepository) DeleteMessageById(id string) error {
+//DeleteMessageByID - removes an existing message record from the repository
+//An error will be returned if the given id does not exist 
+func (mr *MemoryRepository) DeleteMessageByID(id string) error {
 	if _, ok := mr.messagesStorage[id]; ok {
 		delete(mr.messagesStorage, id)
 		return nil
@@ -68,33 +79,12 @@ func (mr *MemoryRepository) DeleteMessageById(id string) error {
 	return ErrorNotFound
 }
 
-func updateString(oldValue, newValue *string) *string {
-	if newValue != nil {
-		if *newValue == "" { // update is explicitly removing the field
-			return nil
-		}
-		return newValue // update is explicitly setting the field to a new value
-	}
-	return oldValue // update did not explicitly set this field
-}
-
-func updateTime(oldValue, newValue *model.MessageTime) *model.MessageTime {
-	if newValue != nil {
-		tmpTime := time.Time(*newValue)
-		if time.Time.IsZero(tmpTime) { // update is explicitly removing the field
-			return nil
-		}
-		return newValue // update is explicitly setting the field to a new value
-	}
-	return oldValue // update did not explicitly set this field
-}
-
 func (mr *MemoryRepository) storeMessage(id string, oldMessage model.MessageResponse, updateMessage model.MessageRequest) *model.MessageResponse {
 	newMessageResponse := model.MessageResponse{
 		ID:        id,
 		Author:    updateString(oldMessage.Author, updateMessage.Author),
 		Content:   updateString(oldMessage.Content, updateMessage.Content),
-		CreatedAt: updateTime(oldMessage.CreatedAt, updateMessage.CreatedAt),
+		CreatedAt: (*model.MessageTime)(updateTime((*time.Time)(oldMessage.CreatedAt), (*time.Time)(updateMessage.CreatedAt))),
 	}
 
 	if oldMessage.Content == nil ||

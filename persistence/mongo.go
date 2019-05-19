@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"time"
 
 	"github.com/shauera/messages/model"
 	"github.com/shauera/messages/utils"
@@ -15,12 +16,14 @@ import (
 	config "github.com/spf13/viper"
 )
 
+//MongoRepository - mongo collection (database) for persisting message documents
 type MongoRepository struct {
 	ctx          context.Context
 	client       *mongo.Client
 	databaseName string
 }
 
+//NewMongoRepository - initialize and return a new MongoRepository
 func NewMongoRepository(ctx context.Context) *MongoRepository {
 	mongoConnectionString := `mongodb://` + config.GetString("database.server")
 	username := config.GetString("database.username")
@@ -39,11 +42,13 @@ func NewMongoRepository(ctx context.Context) *MongoRepository {
 	}
 }
 
+//CreateMessage - adds a new message record into repository
 func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.MessageResponse, error) {
 	createMessage := model.MessageResponse{
-		Author:     message.Author,
-		Content:    message.Content,
-		CreatedAt:  message.CreatedAt,
+		ID:         primitive.NewObjectID(),
+		Author:     updateString(nil, message.Author),
+		Content:    updateString(nil, message.Content),
+		CreatedAt:  (*model.MessageTime)(updateTime(nil, (*time.Time)(message.CreatedAt))),
 		Palindrome: utils.IsPalindrome(*message.Content),
 	}
 
@@ -58,6 +63,64 @@ func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.M
 	return &createMessage, nil
 }
 
+//UpdateMessageByID - updates an existing message record
+//An error will be returned if the given id does not exist 
+func (mr *MongoRepository) UpdateMessageByID(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
+	oldMessage, err := mr.FindMessageByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := mr.client.Database(mr.databaseName).Collection("messages")
+
+	messageID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := model.MessageResponse{ID: messageID}
+
+	updatedAuthor := updateString(oldMessage.Author, updateMessage.Author)
+	updatedCreatedAt := (*model.MessageTime)(updateTime((*time.Time)(oldMessage.CreatedAt), (*time.Time)(updateMessage.CreatedAt)))
+	upadtedContent := updateString(oldMessage.Content, updateMessage.Content)
+	var updatedPalindrome bool
+	if updateMessage.Content != nil && *upadtedContent != *oldMessage.Content {
+		// message content got a new value, calculating new palindrome state
+		updatedPalindrome = utils.IsPalindrome(*updateMessage.Content)
+	}
+
+	update := bson.D{
+		//{Key: "$set", Value: bson.D{
+		{Key: op(updatedAuthor), Value: bson.D{
+			{Key: "author", Value: updatedAuthor},
+		}},
+		{Key: op(upadtedContent), Value: bson.D{
+			{Key: "content", Value: upadtedContent},
+		}},
+		{Key: op(updatedCreatedAt), Value: bson.D{
+			{Key: "createdAt", Value: updatedCreatedAt},
+		}},
+		{Key: "$set", Value: bson.D{
+			{Key: "palindrome", Value: updatedPalindrome},
+		}},
+	}
+
+	updateOptions := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	var updatedMessage model.MessageResponse
+	err = collection.FindOneAndUpdate(mr.ctx, filter, update, updateOptions).Decode(&updatedMessage)
+	if err != nil && err.Error() == "mongo: no documents in result" {
+		return nil, ErrorNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedMessage, nil
+}
+
+//ListMessages - returns all message records in the repository
 func (mr *MongoRepository) ListMessages() (model.MessageResponses, error) {
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
@@ -81,7 +144,9 @@ func (mr *MongoRepository) ListMessages() (model.MessageResponses, error) {
 	return MessageResponses, nil
 }
 
-func (mr *MongoRepository) FindMessageById(id string) (*model.MessageResponse, error) {
+//FindMessageByID - returns an existing message record
+//An error will be returned if the given id does not exist 
+func (mr *MongoRepository) FindMessageByID(id string) (*model.MessageResponse, error) {
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	messageID, err := primitive.ObjectIDFromHex(id)
@@ -89,8 +154,8 @@ func (mr *MongoRepository) FindMessageById(id string) (*model.MessageResponse, e
 		return nil, err
 	}
 
-	var message model.MessageResponse
-	err = collection.FindOne(mr.ctx, model.MessageResponse{ID: messageID}).Decode(&message)
+	var messageResponse model.MessageResponse
+	err = collection.FindOne(mr.ctx, model.MessageResponse{ID: messageID}).Decode(&messageResponse)
 	if err != nil && err.Error() == "mongo: no documents in result" {
 		return nil, ErrorNotFound
 	}
@@ -99,42 +164,12 @@ func (mr *MongoRepository) FindMessageById(id string) (*model.MessageResponse, e
 		return nil, err
 	}
 
-	return &message, nil
+	return &messageResponse, nil
 }
 
-func (mr *MongoRepository) UpdateMessageById(id string, message model.MessageRequest) (*model.MessageResponse, error) {
-	collection := mr.client.Database(mr.databaseName).Collection("messages")
-
-	messageID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	filter := model.MessageResponse{ID: messageID}
-	update := bson.D{
-		{Key: "$set", Value: bson.D{
-			{Key: "author", Value: message.Author},
-			{Key: "content", Value: message.Content},
-			{Key: "createdAt", Value: message.CreatedAt},
-			{Key: "palindrome", Value: utils.IsPalindrome(*message.Content)},
-		}},
-	}
-	updateOptions := options.FindOneAndUpdate().SetReturnDocument(options.After)
-
-	var updatedMessage model.MessageResponse
-	err = collection.FindOneAndUpdate(mr.ctx, filter, update, updateOptions).Decode(&updatedMessage)
-	if err != nil && err.Error() == "mongo: no documents in result" {
-		return nil, ErrorNotFound
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &updatedMessage, nil
-}
-
-func (mr *MongoRepository) DeleteMessageById(id string) error {
+//DeleteMessageByID - removes an existing message record from the repository
+//An error will be returned if the given id does not exist 
+func (mr *MongoRepository) DeleteMessageByID(id string) error {
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	messageID, err := primitive.ObjectIDFromHex(id)
@@ -148,4 +183,12 @@ func (mr *MongoRepository) DeleteMessageById(id string) error {
 	}
 
 	return err
+}
+
+func op(value interface{}) string {
+	if !utils.IsNilValue(value) {
+		return "$set"
+	}
+
+	return "$unset"
 }

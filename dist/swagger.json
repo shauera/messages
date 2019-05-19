@@ -215,7 +215,7 @@
           "description": "The contet of the message.",
           "type": "string",
           "x-go-name": "Content",
-          "example": "To be, or not to be: that is the question "
+          "example": "To be, or not to be: that is the question"
         },
         "createdAt": {
           "$ref": "#/definitions/MessageTime"

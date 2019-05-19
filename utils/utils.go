@@ -3,6 +3,7 @@ package utils
 import (
 	"regexp"
 	"strings"
+	"unsafe"
 )
 
 // https://en.wikipedia.org/wiki/Palindrome
@@ -31,4 +32,9 @@ func prepare(str string) string {
 	reg, _ := regexp.Compile("[^A-Za-z0-9]+")
 	clean := reg.ReplaceAllString(str, "")
 	return strings.ToLower(strings.Trim(clean, ""))
+}
+
+//IsNilValue - returns true if the value passed in is nil
+func IsNilValue(value interface{}) bool {
+	return (*[2]uintptr)(unsafe.Pointer(&value))[1] == 0
 }

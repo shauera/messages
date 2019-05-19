@@ -243,9 +243,11 @@
   input-imports = [
     "github.com/gorilla/mux",
     "github.com/mongodb/mongo-go-driver/bson",
+    "github.com/mongodb/mongo-go-driver/bson/bsontype",
     "github.com/mongodb/mongo-go-driver/bson/primitive",
     "github.com/mongodb/mongo-go-driver/mongo",
     "github.com/mongodb/mongo-go-driver/mongo/options",
+    "github.com/mongodb/mongo-go-driver/x/bsonx/bsoncore",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
   ]
