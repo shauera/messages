@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/shauera/messages/model"
 	"github.com/shauera/messages/utils"
 
@@ -18,32 +19,51 @@ import (
 
 //MongoRepository - mongo collection (database) for persisting message documents
 type MongoRepository struct {
-	ctx          context.Context
 	client       *mongo.Client
 	databaseName string
 }
 
 //NewMongoRepository - initialize and return a new MongoRepository
-func NewMongoRepository(ctx context.Context) *MongoRepository {
+func NewMongoRepository(ctx context.Context) (*MongoRepository, error) {
 	mongoConnectionString := `mongodb://` + config.GetString("database.server")
 	username := config.GetString("database.username")
 	password := config.GetString("database.password")
 
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
 	clientOptions := options.Client().SetAuth(options.Credential{Username: username, Password: password})
-	client, err := mongo.Connect(ctx, mongoConnectionString, clientOptions)
+	client, err := mongo.Connect(repositoryContext, mongoConnectionString, clientOptions)
 	if err != nil {
-		log.WithError(err).Warning("Could not connect to database")
+		log.WithError(err).Debug("Could not connect to database")
+		return nil, errors.Wrap(err, "Could not connect to database")
+	}
+	err = client.Ping(repositoryContext, nil)
+	if err != nil {
+		log.WithError(err).WithField("server", mongoConnectionString).Debug("Could not ping database")
+		return nil, errors.Wrap(err, "Could not ping database")
 	}
 
+	go func() {
+		<-ctx.Done()
+		log.Debug("Closing mongodb connection")
+		if client.Disconnect(ctx) != nil {
+			log.Debug("Failed to close mongodb connection")
+		}
+		log.Debug("Mongodb connection closed")
+	}()
+
 	return &MongoRepository{
-		ctx:          ctx,
 		client:       client,
 		databaseName: config.GetString("database.dbname"),
-	}
+	}, nil
 }
 
 //CreateMessage - adds a new message record into repository
-func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.MessageResponse, error) {
+func (mr *MongoRepository) CreateMessage(ctx context.Context, message model.MessageRequest) (*model.MessageResponse, error) {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
 	createMessage := model.MessageResponse{
 		ID:         primitive.NewObjectID(),
 		Author:     updateString(nil, message.Author),
@@ -53,7 +73,7 @@ func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.M
 	}
 
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
-	result, err := collection.InsertOne(mr.ctx, createMessage)
+	result, err := collection.InsertOne(repositoryContext, createMessage)
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +84,12 @@ func (mr *MongoRepository) CreateMessage(message model.MessageRequest) (*model.M
 }
 
 //UpdateMessageByID - updates an existing message record
-//An error will be returned if the given id does not exist 
-func (mr *MongoRepository) UpdateMessageByID(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
-	oldMessage, err := mr.FindMessageByID(id)
+//An error will be returned if the given id does not exist
+func (mr *MongoRepository) UpdateMessageByID(ctx context.Context, id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
+	oldMessage, err := mr.FindMessageByID(repositoryContext, id)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +131,7 @@ func (mr *MongoRepository) UpdateMessageByID(id string, updateMessage model.Mess
 	updateOptions := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
 	var updatedMessage model.MessageResponse
-	err = collection.FindOneAndUpdate(mr.ctx, filter, update, updateOptions).Decode(&updatedMessage)
+	err = collection.FindOneAndUpdate(repositoryContext, filter, update, updateOptions).Decode(&updatedMessage)
 	if err != nil && err.Error() == "mongo: no documents in result" {
 		return nil, ErrorNotFound
 	}
@@ -121,17 +144,20 @@ func (mr *MongoRepository) UpdateMessageByID(id string, updateMessage model.Mess
 }
 
 //ListMessages - returns all message records in the repository
-func (mr *MongoRepository) ListMessages() (model.MessageResponses, error) {
+func (mr *MongoRepository) ListMessages(ctx context.Context) (model.MessageResponses, error) {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
-	cursor, err := collection.Find(mr.ctx, bson.M{})
+	cursor, err := collection.Find(repositoryContext, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(mr.ctx)
+	defer cursor.Close(repositoryContext)
 
 	var MessageResponses model.MessageResponses
-	for cursor.Next(mr.ctx) {
+	for cursor.Next(repositoryContext) {
 		var MessageResponse model.MessageResponse
 		cursor.Decode(&MessageResponse)
 		MessageResponses = append(MessageResponses, MessageResponse)
@@ -145,8 +171,11 @@ func (mr *MongoRepository) ListMessages() (model.MessageResponses, error) {
 }
 
 //FindMessageByID - returns an existing message record
-//An error will be returned if the given id does not exist 
-func (mr *MongoRepository) FindMessageByID(id string) (*model.MessageResponse, error) {
+//An error will be returned if the given id does not exist
+func (mr *MongoRepository) FindMessageByID(ctx context.Context, id string) (*model.MessageResponse, error) {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	messageID, err := primitive.ObjectIDFromHex(id)
@@ -155,7 +184,7 @@ func (mr *MongoRepository) FindMessageByID(id string) (*model.MessageResponse, e
 	}
 
 	var messageResponse model.MessageResponse
-	err = collection.FindOne(mr.ctx, model.MessageResponse{ID: messageID}).Decode(&messageResponse)
+	err = collection.FindOne(repositoryContext, model.MessageResponse{ID: messageID}).Decode(&messageResponse)
 	if err != nil && err.Error() == "mongo: no documents in result" {
 		return nil, ErrorNotFound
 	}
@@ -168,8 +197,11 @@ func (mr *MongoRepository) FindMessageByID(id string) (*model.MessageResponse, e
 }
 
 //DeleteMessageByID - removes an existing message record from the repository
-//An error will be returned if the given id does not exist 
-func (mr *MongoRepository) DeleteMessageByID(id string) error {
+//An error will be returned if the given id does not exist
+func (mr *MongoRepository) DeleteMessageByID(ctx context.Context, id string) error {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
 	collection := mr.client.Database(mr.databaseName).Collection("messages")
 
 	messageID, err := primitive.ObjectIDFromHex(id)
@@ -177,7 +209,7 @@ func (mr *MongoRepository) DeleteMessageByID(id string) error {
 		return err
 	}
 
-	result, err := collection.DeleteOne(mr.ctx, model.MessageResponse{ID: messageID})
+	result, err := collection.DeleteOne(repositoryContext, model.MessageResponse{ID: messageID})
 	if err == nil && result.DeletedCount == 0 {
 		return ErrorNotFound
 	}
@@ -191,4 +223,8 @@ func op(value interface{}) string {
 	}
 
 	return "$unset"
+}
+
+func getRepositoryContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, config.GetDuration("database.timeout"))
 }

@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"context"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -17,33 +18,33 @@ type MemoryRepository struct {
 }
 
 //NewMemoryRepository - initialize and return a new MemoryRepository
-func NewMemoryRepository() *MemoryRepository {
+func NewMemoryRepository() (*MemoryRepository, error) {
 	return &MemoryRepository{
 		messagesStorage: make(map[string]model.MessageResponse),
-	}
+	}, nil
 }
 
 //CreateMessage - adds a new message record into repository
-func (mr *MemoryRepository) CreateMessage(newMessage model.MessageRequest) (*model.MessageResponse, error) {
+func (mr *MemoryRepository) CreateMessage(ctx context.Context, newMessage model.MessageRequest) (*model.MessageResponse, error) {
 	id := strconv.FormatInt(atomic.AddInt64(&mr.messageIDCounter, 1), 10)
 
-	messageResponse := mr.storeMessage(id, model.MessageResponse{}, newMessage)
+	messageResponse := mr.storeMessage(ctx, id, model.MessageResponse{}, newMessage)
 	return messageResponse, nil
 }
 
 //UpdateMessageByID - updates an existing message record
 //An error will be returned if the given id does not exist 
-func (mr *MemoryRepository) UpdateMessageByID(id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
+func (mr *MemoryRepository) UpdateMessageByID(ctx context.Context, id string, updateMessage model.MessageRequest) (*model.MessageResponse, error) {
 
 	if oldMessage, ok := mr.messagesStorage[id]; ok {
-		return mr.storeMessage(id, oldMessage, updateMessage), nil
+		return mr.storeMessage(ctx, id, oldMessage, updateMessage), nil
 	}
 
 	return nil, ErrorNotFound
 }
 
 //ListMessages - returns all message records in the repository
-func (mr *MemoryRepository) ListMessages() (model.MessageResponses, error) {
+func (mr *MemoryRepository) ListMessages(ctx context.Context) (model.MessageResponses, error) {
 
 	messageResponses := make(model.MessageResponses, 0, len(mr.messagesStorage))
 
@@ -60,7 +61,7 @@ func (mr *MemoryRepository) ListMessages() (model.MessageResponses, error) {
 
 //FindMessageByID - returns an existing message record
 //An error will be returned if the given id does not exist  
-func (mr *MemoryRepository) FindMessageByID(id string) (*model.MessageResponse, error) {
+func (mr *MemoryRepository) FindMessageByID(ctx context.Context, id string) (*model.MessageResponse, error) {
 	if messageResponse, ok := mr.messagesStorage[id]; ok {
 		return &messageResponse, nil
 	}
@@ -70,7 +71,7 @@ func (mr *MemoryRepository) FindMessageByID(id string) (*model.MessageResponse, 
 
 //DeleteMessageByID - removes an existing message record from the repository
 //An error will be returned if the given id does not exist 
-func (mr *MemoryRepository) DeleteMessageByID(id string) error {
+func (mr *MemoryRepository) DeleteMessageByID(ctx context.Context, id string) error {
 	if _, ok := mr.messagesStorage[id]; ok {
 		delete(mr.messagesStorage, id)
 		return nil
@@ -79,7 +80,7 @@ func (mr *MemoryRepository) DeleteMessageByID(id string) error {
 	return ErrorNotFound
 }
 
-func (mr *MemoryRepository) storeMessage(id string, oldMessage model.MessageResponse, updateMessage model.MessageRequest) *model.MessageResponse {
+func (mr *MemoryRepository) storeMessage(ctx context.Context, id string, oldMessage model.MessageResponse, updateMessage model.MessageRequest) *model.MessageResponse {
 	newMessageResponse := model.MessageResponse{
 		ID:        id,
 		Author:    updateString(oldMessage.Author, updateMessage.Author),

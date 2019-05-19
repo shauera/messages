@@ -16,16 +16,15 @@ import (
 
 // MessageRepository - repository abstraction to be implemented by persisters
 type MessageRepository interface {
-	FindMessageByID(id string) (*model.MessageResponse, error)
-	CreateMessage(message model.MessageRequest) (*model.MessageResponse, error)
-	ListMessages() (model.MessageResponses, error)
-	DeleteMessageByID(id string) error
-	UpdateMessageByID(id string, message model.MessageRequest) (*model.MessageResponse, error)
+	FindMessageByID(ctx context.Context, id string) (*model.MessageResponse, error)
+	CreateMessage(ctx context.Context, message model.MessageRequest) (*model.MessageResponse, error)
+	ListMessages(ctx context.Context, ) (model.MessageResponses, error)
+	DeleteMessageByID(ctx context.Context, id string) error
+	UpdateMessageByID(ctx context.Context, id string, message model.MessageRequest) (*model.MessageResponse, error)
 }
 
 // MessageController - handles message resource endpoints
 type MessageController struct {
-	ctx        context.Context
 	repository MessageRepository
 }
 
@@ -67,7 +66,7 @@ func (mc *MessageController) CreateMessage(response http.ResponseWriter, request
 		return
 	}
 
-	messageID, err := mc.repository.CreateMessage(newMessage)
+	messageID, err := mc.repository.CreateMessage(request.Context(), newMessage)
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(response).Encode(modelCommon.ErrorResponse{Message: err.Error()})
@@ -100,7 +99,7 @@ func (mc *MessageController) ListMessages(response http.ResponseWriter, request 
 	//     description: Internal Server Error
 	response.Header().Set("content-type", "application/json")
 
-	messages, err := mc.repository.ListMessages()
+	messages, err := mc.repository.ListMessages(request.Context(), )
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(response).Encode(modelCommon.ErrorResponse{Message: err.Error()})
@@ -138,7 +137,7 @@ func (mc *MessageController) GetMessageByID(response http.ResponseWriter, reques
 	//     description: Internal Server Error
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	message, err := mc.repository.FindMessageByID(params["id"])
+	message, err := mc.repository.FindMessageByID(request.Context(), params["id"])
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)
@@ -195,7 +194,7 @@ func (mc *MessageController) UpdateMessageByID(response http.ResponseWriter, req
 
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	message, err := mc.repository.UpdateMessageByID(params["id"], updatedMessage)
+	message, err := mc.repository.UpdateMessageByID(request.Context(), params["id"], updatedMessage)
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)
@@ -234,7 +233,7 @@ func (mc *MessageController) DeleteMessageByID(response http.ResponseWriter, req
 	//     description: Internal Server Error
 	response.Header().Set("content-type", "application/json")
 	params := mux.Vars(request)
-	err := mc.repository.DeleteMessageByID(params["id"])
+	err := mc.repository.DeleteMessageByID(request.Context(), params["id"])
 	if err != nil {
 		if err == persistence.ErrorNotFound {
 			response.WriteHeader(http.StatusNotFound)
