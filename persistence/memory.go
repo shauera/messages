@@ -98,3 +98,8 @@ func (mr *MemoryRepository) storeMessage(ctx context.Context, id string, oldMess
 
 	return &newMessageResponse
 }
+
+//GetMessagesStorage - allows direct manipualtion of the storage to facilitate testing
+func (mr *MemoryRepository) GetMessagesStorage() map[string]model.MessageResponse {
+	return mr.messagesStorage
+}

@@ -33,14 +33,20 @@ type MessageRequest struct {
 }
 
 // Validate - make sure that:
-// - Content: is string 1 - 256 characters long
+// - Content: is a string 1 - 256 characters long
 func (mr MessageRequest) Validate() ValidationErrorsResponse {
-	contentLength := len(*mr.Content)
-
 	var validationErrorsResponse ValidationErrorsResponse
-	if contentLength < 1 || contentLength > 256 {
-		validationErrorsResponse.Message = append(validationErrorsResponse.Message,
-			fmt.Sprintf("Content must be between 1 and 256 characters long. Got %d instead", contentLength))
+
+	if mr.Content == nil {
+		validationErrorsResponse.Messages = append(validationErrorsResponse.Messages,
+			fmt.Sprintf("Content must be between 1 and 256 characters long. Got NULL instead"))
+	} else {
+		contentLength := len(*mr.Content)
+
+		if contentLength < 1 || contentLength > 256 {
+			validationErrorsResponse.Messages = append(validationErrorsResponse.Messages,
+				fmt.Sprintf("Content must be between 1 and 256 characters long. Got %d instead", contentLength))
+		}
 	}
 
 	return validationErrorsResponse

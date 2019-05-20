@@ -7,5 +7,5 @@ type ErrorResponse struct {
 
 //ValidationErrorsResponse - template for rendering errors in HTTP responses all validation errors for a specific request 
 type ValidationErrorsResponse struct {
-	Message []string `json:"message"`
+	Messages []string `json:"message"`
 }

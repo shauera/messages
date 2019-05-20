@@ -273,13 +273,14 @@ func validateRequest(response http.ResponseWriter, request *http.Request) (*mode
 	err := json.NewDecoder(request.Body).Decode(&newMessage)
 	if err != nil {
 		response.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(response).Encode(modelCommon.ErrorResponse{Message: err.Error()})
+		responseErr := errors.Wrap(err, "Could not decode request body")
+		json.NewEncoder(response).Encode(modelCommon.ErrorResponse{Message: responseErr.Error()})
 		log.WithError(err).Debug("Could not decode request body")
 		return nil, errors.New("validation failed")
 	}
 
 	validationErrorsResponse := newMessage.Validate()
-	if len(validationErrorsResponse.Message) != 0 {
+	if len(validationErrorsResponse.Messages) != 0 {
 		response.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(response).Encode(validationErrorsResponse)
 		log.Debug("Validation of message request failed")
