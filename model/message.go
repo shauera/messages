@@ -1,7 +1,7 @@
 package model
 
 import (
-//"time"
+	"fmt"
 )
 
 // MessageRequest is a word, sentence or phrase written by an author
@@ -13,6 +13,9 @@ type MessageRequest struct {
 	// The contet of the message.
 	//
 	// required: true
+	// pattern: \w[\w-]+
+	// minimum length: 1
+	// maximum length: 256
 	// example: To be, or not to be: that is the question
 	Content *string `json:"content,omitempty" bson:"content,omitempty"`
 
@@ -27,6 +30,20 @@ type MessageRequest struct {
 	// required: false
 	// example: 1599-01-03T07:30:30.457Z
 	CreatedAt *MessageTime `json:"createdAt,omitempty" bson:"createdAt,omitempty"`
+}
+
+// Validate - make sure that:
+// - Content: is string 1 - 256 characters long
+func (mr MessageRequest) Validate() ValidationErrorsResponse {
+	contentLength := len(*mr.Content)
+
+	var validationErrorsResponse ValidationErrorsResponse
+	if contentLength < 1 || contentLength > 256 {
+		validationErrorsResponse.Message = append(validationErrorsResponse.Message,
+			fmt.Sprintf("Content must be between 1 and 256 characters long. Got %d instead", contentLength))
+	}
+
+	return validationErrorsResponse
 }
 
 // MessageResponse is a word, sentence or phrase written by an author

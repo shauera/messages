@@ -9,8 +9,9 @@ import (
 	"github.com/mongodb/mongo-go-driver/x/bsonx/bsoncore"
 )
 
-// MessageTime - support "null" as zero time
-// we want this to be an alias to time.Time so swagger will pick this as time when creating examples
+// MessageTime - time alias type that supports "null" as zero time
+//
+// swagger:model
 type MessageTime time.Time
 
 // UnmarshalJSON - used to accomodate passing null as "zero" time in JSON

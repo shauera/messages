@@ -214,6 +214,9 @@
         "content": {
           "description": "The contet of the message.",
           "type": "string",
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\w[\\w-]+",
           "x-go-name": "Content",
           "example": "To be, or not to be: that is the question"
         },
@@ -262,7 +265,7 @@
       "x-go-package": "github.com/shauera/messages/model"
     },
     "MessageTime": {
-      "description": "MessageTime - support \"null\" as zero time\nwe want this to be an alias to time.Time so swagger will pick this as time when creating examples",
+      "description": "MessageTime - time alias type that supports \"null\" as zero time",
       "type": "string",
       "format": "date-time",
       "x-go-package": "github.com/shauera/messages/model"
