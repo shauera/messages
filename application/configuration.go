@@ -3,12 +3,21 @@ package application
 import (
 	log "github.com/sirupsen/logrus"
 	config "github.com/spf13/viper"
+
+	"strings"
 )
 
 //InitConfig - initialize message manager instance defaults
 //This will read the configuration file and set defaults for each
 //missing configuration entry
 func InitConfig() {
+    // Prefix all envirinment variables with "messages"
+	config.SetEnvPrefix("messages")
+	// Compound variable names with `_` instead of `.``
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	// Automatically read (and use as overrides) environment variables
+	config.AutomaticEnv()
+	
 	// Source
 	config.SetConfigName("config")
 	config.AddConfigPath("/etc/messages")
