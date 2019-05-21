@@ -60,11 +60,8 @@ func Test_Get_All(t *testing.T) {
 				}
 			},
 			checker: func(t *testing.T, response *httptest.ResponseRecorder) {
-				assert.Equal(t,
-					"[{\"id\":\"8\",\"content\":\"Test Message 1\",\"author\":\"test author 1\",\"createdAt\":\"2016-08-15T00:00:00Z\",\"palindrome\":false},"+
-						"{\"id\":\"10\",\"content\":\"Test Message 2\",\"author\":\"test author 2\",\"createdAt\":\"2017-08-15T00:00:00Z\",\"palindrome\":false}]"+
-						"\n",
-					response.Body.String())
+				assert.Contains(t, response.Body.String(), "{\"id\":\"8\",\"content\":\"Test Message 1\",\"author\":\"test author 1\",\"createdAt\":\"2016-08-15T00:00:00Z\",\"palindrome\":false}")
+				assert.Contains(t, response.Body.String(), "{\"id\":\"10\",\"content\":\"Test Message 2\",\"author\":\"test author 2\",\"createdAt\":\"2017-08-15T00:00:00Z\",\"palindrome\":false}")
 				assert.Equal(t, http.StatusOK, response.Code)
 			},
 		},

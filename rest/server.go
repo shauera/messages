@@ -53,9 +53,9 @@ func StartHTTPServer(ctx context.Context) {
 		log.WithField("databaseType", databaseType).Fatal("Non supported database type")
 	}
 
-	//TODO - Need to make this more tollerant for the ocassion that the DB is not running yet
+	//TODO - Need to make this more tollerant for the occasion that the DB is not running yet
 	if err != nil {
-		log.WithError(err).WithField("databaseType", databaseType).Fatal("Could not initialize database")
+		log.WithError(err).WithField("databaseType", databaseType).Fatal("Could not initialize database connection")
 	}
 
 	var serviceControllers []ServiceController
