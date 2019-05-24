@@ -36,10 +36,11 @@ func setupMux(serviceControllers []ServiceController) *mux.Router {
 }
 
 // TODO - add metrics https://opencensus.io/stats/
-// TODO - add health
 
-// StartHTTPServer - start service messages
-func StartHTTPServer(ctx context.Context) {
+// StartExternalHTTPServer - start serving messages endpoints
+func StartExternalHTTPServer(ctx context.Context) {
+	log.Debug("Starting external HTTP server")
+
 	var messageRepository MessageRepository
 	var err error
 
@@ -47,8 +48,8 @@ func StartHTTPServer(ctx context.Context) {
 	switch databaseType {
 	case "memory":
 		messageRepository, err = persistence.NewMemoryRepository()
-	case "mongo":
-		messageRepository, err = persistence.NewMongoRepository(ctx)
+	case "mongo":		
+		messageRepository, err = persistence.NewMongoRepository(ctx, "MongoDB-MessagesRepository")
 	default:
 		log.WithField("databaseType", databaseType).Fatal("Non supported database type")
 	}

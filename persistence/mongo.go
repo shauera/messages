@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/shauera/messages/application"
 	"github.com/shauera/messages/model"
 	"github.com/shauera/messages/utils"
 
@@ -24,7 +25,7 @@ type MongoRepository struct {
 }
 
 //NewMongoRepository - initialize and return a new MongoRepository
-func NewMongoRepository(ctx context.Context) (*MongoRepository, error) {
+func NewMongoRepository(ctx context.Context, healthSystemID string) (*MongoRepository, error) {
 	mongoConnectionString := `mongodb://` + config.GetString("database.server")
 	username := config.GetString("database.username")
 	password := config.GetString("database.password")
@@ -52,6 +53,8 @@ func NewMongoRepository(ctx context.Context) (*MongoRepository, error) {
 		}
 		log.Debug("Mongodb connection closed")
 	}()
+
+	application.AddHealthMonitor(newMongoHealthMonitor(healthSystemID, client))
 
 	return &MongoRepository{
 		client:       client,
@@ -227,4 +230,34 @@ func op(value interface{}) string {
 
 func getRepositoryContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(ctx, config.GetDuration("database.timeout"))
+}
+
+//--------------------------- Health Monitor ------------------------------------
+type mongoHealthMonitor struct {
+	healthSystemID string
+	client         *mongo.Client
+}
+
+func newMongoHealthMonitor(healthSystemID string, client *mongo.Client) application.HealthMonitor {
+	return mongoHealthMonitor{
+		healthSystemID: healthSystemID,
+		client:         client,
+	}
+}
+
+func (mhm mongoHealthMonitor) IsHealthy(ctx context.Context) bool {
+	repositoryContext, cancel := getRepositoryContext(ctx)
+	defer cancel()
+
+	err := mhm.client.Ping(repositoryContext, nil)
+	if err != nil {
+		log.WithError(err).WithField("systemID", mhm.healthSystemID).Debug("Could not ping database")
+		return false
+	}
+
+	return true
+}
+
+func (mhm mongoHealthMonitor) GetSystemID() string {
+	return mhm.healthSystemID
 }

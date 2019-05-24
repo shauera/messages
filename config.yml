@@ -1,5 +1,7 @@
 service:
   port: 8090
+  healthPort: 8091
+  healthScanInterval: 30s
   shutdownGraceDuration: 1s
 
 database:

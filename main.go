@@ -39,8 +39,13 @@ func main() {
 	cancellableContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start HTTP server
-	go rest.StartHTTPServer(cancellableContext)
+	application.InitHealth(cancellableContext)
+
+	// Start internal HTTP - serving Health, Monitoring and internal API
+	go rest.StartInternalHTTPServer(cancellableContext)
+
+	// Start HTTP server - serving external endpoints
+	go rest.StartExternalHTTPServer(cancellableContext)
 
 	// -- Wait for a SIGINT. Run cleanup when signal is received ---
 	signalChan := make(chan os.Signal, 1)

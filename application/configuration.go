@@ -11,13 +11,13 @@ import (
 //This will read the configuration file and set defaults for each
 //missing configuration entry
 func InitConfig() {
-    // Prefix all envirinment variables with "messages"
+	// Prefix all envirinment variables with "messages"
 	config.SetEnvPrefix("messages")
 	// Compound variable names with `_` instead of `.``
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	// Automatically read (and use as overrides) environment variables
 	config.AutomaticEnv()
-	
+
 	// Source
 	config.SetConfigName("config")
 	config.AddConfigPath("/etc/messages")
@@ -39,6 +39,8 @@ func InitConfig() {
 	config.SetDefault(
 		"service", map[string]interface{}{
 			"port":                  "8090",
+			"healthPort":            "8091",
+			"healthScanInterval":    "30s",
 			"shutdownGraceDuration": "10s",
 		},
 	)

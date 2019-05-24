@@ -7,6 +7,6 @@ WORKDIR /opt/messages
 COPY dist ./dist/
 COPY messages config.yml ./
 
-EXPOSE 8090
+EXPOSE 8090 8091
 
 ENTRYPOINT ["./messages"]
